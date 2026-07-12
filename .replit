@@ -1,0 +1,18 @@
+run = "npm start"
+entrypoint = "server.js"
+
+[nix]
+channel = "stable-23_11"
+
+[unitTest]
+language = "nodejs"
+
+[languages.javascript]
+pattern = "**/{*.js,*.jsx,*.ts,*.tsx}"
+
+[languages.javascript.languageServer]
+start = "typescript-language-server --stdio"
+
+[[ports]]
+express = 3
+localPort = 3000
