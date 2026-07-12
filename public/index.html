@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Snake</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐍 Multiplayer Snake</h1>
+            <div class="connection-status" id="status">Connecting...</div>
+        </div>
+
+        <div class="game-wrapper">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+            
+            <div class="sidebar">
+                <div class="join-section" id="joinSection">
+                    <h2>Join Game</h2>
+                    <input type="text" id="playerName" placeholder="Your name" maxlength="15">
+                    <input type="text" id="gameId" placeholder="Game ID" value="default">
+                    <button onclick="joinGame()">Join</button>
+                </div>
+
+                <div class="game-info" id="gameInfo" style="display:none;">
+                    <h2>Players</h2>
+                    <div id="playersList"></div>
+                    <div class="scores">
+                        <h3>Scores</h3>
+                        <div id="scoresList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <p>Use Arrow Keys or WASD to move</p>
+            <div class="arrow-buttons">
+                <button class="arrow-btn" onclick="sendDirection(0, -1)">↑</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="arrow-btn" onclick="sendDirection(-1, 0)">←</button>
+                    <button class="arrow-btn" onclick="sendDirection(0, 1)">↓</button>
+                    <button class="arrow-btn" onclick="sendDirection(1, 0)">→</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
