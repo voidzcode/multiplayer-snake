@@ -1,9 +1,11 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const socket = io();
 
-const GRID_SIZE = 20; // Grid width/height in cells
+const GRID_SIZE = 20;
 const CELL_SIZE = canvas.width / GRID_SIZE;
+const GRID_WIDTH = 20;
+const GRID_HEIGHT = 20;
+const TICK_RATE = 100; // ms between updates
 
 let gameState = {
     snakes: {},
@@ -11,7 +13,23 @@ let gameState = {
 };
 
 let myId = null;
-let gameId = 'default';
+let roomName = 'default';
+let myPlayer = null;
+let isConnected = false;
+
+// Photon Client
+const photonClient = new Photon.LoadBalancing.LoadBalancingClient(
+    Photon.ConnectionProtocol.Wss,
+    '2902f049-a0b0-410b-9e8b-c488d223e870',
+    '1.0.0'
+);
+
+// Photon Event Codes
+const EventCodes = {
+    GAME_STATE: 1,
+    PLAYER_DIRECTION: 2,
+    PLAYER_JOINED: 3
+};
 
 // Status indicator
 function updateStatus(status, type = 'connecting') {
@@ -20,52 +38,107 @@ function updateStatus(status, type = 'connecting') {
     statusEl.className = `connection-status ${type}`;
 }
 
-// Socket events
-socket.on('connect', () => {
-    updateStatus('Connected', 'connected');
-    console.log('Connected to server');
-});
+// Photon Event Handlers
+photonClient.onStateChange = (state) => {
+    console.log('Photon State:', state);
+    
+    switch(state) {
+        case Photon.LoadBalancing.LoadBalancingClient.State.Connected:
+            updateStatus('Connected to Photon', 'connected');
+            isConnected = true;
+            break;
+        case Photon.LoadBalancing.LoadBalancingClient.State.Joined:
+            updateStatus('Joined Room', 'connected');
+            break;
+        case Photon.LoadBalancing.LoadBalancingClient.State.Disconnected:
+            updateStatus('Disconnected', 'disconnected');
+            isConnected = false;
+            break;
+    }
+};
 
-socket.on('disconnect', () => {
-    updateStatus('Disconnected', 'disconnected');
-});
+photonClient.onEvent = (code, content, actorNr) => {
+    switch(code) {
+        case EventCodes.GAME_STATE:
+            gameState = content;
+            render();
+            break;
+        case EventCodes.PLAYER_JOINED:
+            console.log(`Player joined: ${content.playerName}`);
+            updatePlayersList();
+            break;
+    }
+};
 
-socket.on('game-state', (state) => {
-    gameState = state;
-    render();
-});
+photonClient.onError = (errorCode, errorMsg) => {
+    console.error('Photon Error:', errorCode, errorMsg);
+    updateStatus(`Error: ${errorMsg}`, 'error');
+};
 
-socket.on('player-joined', (data) => {
-    console.log(`${data.playerName} joined! (${data.playerCount} players)`);
-    updatePlayersList();
-});
+// Initialize Photon connection
+function initializePhoton() {
+    console.log('Initializing Photon...');
+    photonClient.connect();
+}
 
-socket.on('player-left', (data) => {
-    console.log(`Player left (${data.playerCount} players remaining)`);
-    updatePlayersList();
-});
-
-function joinGame() {
+// Join a room
+function joinRoom() {
     const nameInput = document.getElementById('playerName');
-    const gameIdInput = document.getElementById('gameId');
+    const roomInput = document.getElementById('roomName');
     const name = nameInput.value.trim() || `Player ${Math.random().toString(36).substr(2, 5)}`;
-    gameId = gameIdInput.value.trim() || 'default';
+    roomName = roomInput.value.trim() || 'default';
 
-    socket.emit('join-game', {
+    if (!isConnected) {
+        updateStatus('Connecting to Photon...', 'connecting');
+        // Connection will trigger room join when ready
+        myPlayer = { name, roomName };
+        return;
+    }
+
+    const roomOptions = new Photon.LoadBalancing.RoomOptions();
+    roomOptions.maxPlayers = 4;
+    roomOptions.isVisible = true;
+    roomOptions.isOpen = true;
+
+    const joinRoomOptions = new Photon.LoadBalancing.JoinRoomOptions();
+    joinRoomOptions.clientProperties = {
         name: name,
-        gameId: gameId
-    });
+        color: getPlayerColor(),
+        score: 0,
+        alive: true
+    };
 
-    myId = socket.id;
+    photonClient.opJoinOrCreateRoom(
+        roomName,
+        joinRoomOptions,
+        roomOptions
+    );
+
+    myId = photonClient.myActor().actorNr;
     document.getElementById('joinSection').style.display = 'none';
     document.getElementById('gameInfo').style.display = 'block';
     updateStatus('In Game', 'connected');
 }
 
+// Send direction input
 function sendDirection(x, y) {
-    socket.emit('direction', {x: x, y: y});
+    if (!isConnected || !myId) return;
+
+    const directionData = { x, y, playerId: myId };
+    photonClient.raiseEvent(
+        EventCodes.PLAYER_DIRECTION,
+        directionData,
+        { receivers: Photon.LoadBalancing.ReceiverGroup.All }
+    );
 }
 
+// Get player color
+function getPlayerColor() {
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A'];
+    return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// Update players list
 function updatePlayersList() {
     const list = document.getElementById('playersList');
     const scoresList = document.getElementById('scoresList');
@@ -74,16 +147,15 @@ function updatePlayersList() {
 
     for (let playerId in gameState.snakes) {
         const snake = gameState.snakes[playerId];
-        const isYou = playerId === myId;
-        const label = isYou ? ' (You)' : '';
-        
+        const isYou = playerId === myId?.toString();
+
         // Players list
         const playerDiv = document.createElement('div');
         playerDiv.className = 'player-item';
         playerDiv.innerHTML = `
             <div>
                 <span class="player-color" style="background: ${snake.color}"></span>
-                Player ${playerId === myId ? '(You)' : playerId.substr(0, 5)}
+                Player ${isYou ? '(You)' : playerId.substr(0, 5)}
             </div>
             <span>${snake.alive ? '🔴 Alive' : '💀 Dead'}</span>
         `;
@@ -94,19 +166,20 @@ function updatePlayersList() {
         scoreDiv.className = 'score-item';
         scoreDiv.innerHTML = `
             <span style="color: ${snake.color}; font-weight: bold;">●</span>
-            <span>Player ${playerId === myId ? '(You)' : playerId.substr(0, 5)}</span>
+            <span>Player ${isYou ? '(You)' : playerId.substr(0, 5)}</span>
             <span>${snake.score}</span>
         `;
         scoresList.appendChild(scoreDiv);
     }
 }
 
+// Render game
 function render() {
     // Clear canvas
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid (optional)
+    // Draw grid
     ctx.strokeStyle = '#2a2a4e';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= GRID_SIZE; i++) {
@@ -138,7 +211,7 @@ function render() {
     // Draw snakes
     for (let playerId in gameState.snakes) {
         const snake = gameState.snakes[playerId];
-        const isYou = playerId === myId;
+        const isYou = playerId === myId?.toString();
 
         // Draw snake body
         snake.body.forEach((segment, index) => {
@@ -176,7 +249,7 @@ function render() {
             }
         });
 
-        // Draw score above snake head if not dead
+        // Draw score above snake head
         if (snake.body.length > 0 && snake.alive) {
             const head = snake.body[0];
             ctx.fillStyle = snake.color;
@@ -245,5 +318,7 @@ canvas.addEventListener('touchend', (e) => {
     }
 });
 
-// Initial render
+// Initialize
+updateStatus('Connecting to Photon...', 'connecting');
+initializePhoton();
 render();

@@ -1,119 +1,112 @@
-# Multiplayer Snake Game 🐍
+# Multiplayer Snake - Photon Web SDK Edition
 
-A real-time multiplayer snake game built with Node.js, Socket.IO, and HTML5 Canvas.
+## Overview
 
-## Features
+This is a web-based multiplayer snake game that uses **Photon Web SDK** for real-time networking and multiplayer synchronization.
 
-- 🎮 **Real-time Multiplayer** - Play with up to 4 players simultaneously
-- 🎨 **Colorful Design** - Each player gets a unique color
-- 📱 **Mobile Friendly** - Works on desktop and mobile devices
-- ⌨️ **Multiple Controls** - Arrow keys, WASD, or touch controls
-- 🏆 **Live Scoring** - See all players' scores in real-time
-- 🌐 **Web-based** - No installation needed, just open in a browser
+**Note:** The original Socket.IO backend has been replaced with Photon Cloud for simplified deployment and better scalability.
 
-## Quick Start
+## Setup Instructions
 
-### Local Development
+### 1. Install Dependencies
 
-1. **Clone this repo**
-   ```bash
-   git clone https://github.com/voidzcode/multiplayer-snake.git
-   cd multiplayer-snake
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start the server**
-   ```bash
-   npm start
-   ```
-
-4. **Open in browser**
-   ```
-   http://localhost:3000
-   ```
-
-### Deploy to Replit (Free & Easy)
-
-1. Go to [Replit.com](https://replit.com)
-2. Click **Create** → **Import from GitHub**
-3. Paste: `https://github.com/voidzcode/multiplayer-snake.git`
-4. Click **Import**
-5. Replit will detect it's a Node.js project and set up automatically
-6. Click **Run** to start the server
-7. Click the **Web** button to open the game in a new tab
-8. Share the link with friends!
-
-### Deploy to Railway (Alternative)
-
-1. Go to [Railway.app](https://railway.app)
-2. Click **New Project** → **Deploy from GitHub repo**
-3. Select this repository
-4. Railway will auto-detect and configure
-5. Your game will be live at a Railway URL
-
-## How to Play
-
-1. **Enter your name** and game ID
-2. **Click Join** to enter the game
-3. **Use controls to move your snake**:
-   - ⬆️ Arrow Keys or WASD
-   - 📱 Swipe on mobile
-   - 🖱️ Click arrow buttons
-4. **Eat the food** 🟡 to grow and earn points
-5. **Avoid other snakes** and walls
-6. **Last snake alive wins!**
-
-## Game Rules
-
-- Each food eaten = +10 points
-- Colliding with another snake's body = you die
-- Colliding with walls = you wrap to the other side
-- When you die, you become a ghost (gray) but stay in the game
-- The game continues until everyone decides to leave
-
-## Customization
-
-### Change Grid Size
-Edit `server.js`:
-```javascript
-const GRID_WIDTH = 20;  // Change this
-const GRID_HEIGHT = 20; // And this
+```bash
+npm install
 ```
 
-### Change Game Speed
-```javascript
-const TICK_RATE = 100; // Lower = faster (milliseconds)
-```
+### 2. Photon Configuration
 
-### Add More Players
-```javascript
-class Game {
-  constructor(gameId, maxPlayers = 4) { // Change 4 to higher number
-```
-
-## Tech Stack
-
-- **Backend**: Node.js + Express + Socket.IO
-- **Frontend**: HTML5 Canvas + Vanilla JavaScript
-- **Networking**: WebSockets (Socket.IO)
-
-## Project Structure
+The game is configured to use your Photon App ID:
 
 ```
-multiplayer-snake/
-├── server.js           # Node.js backend with game logic
-├── package.json        # Dependencies
-├── public/
-│   ├── index.html     # Main game page
-│   ├── game.js        # Client-side game logic
-│   └── style.css      # Styling
-└── README.md          # This file
+App ID: 2902f049-a0b0-410b-9e8b-c488d223e870
 ```
 
-## License
+This is already set in `public/photon-config.js` and `public/game.js`.
 
-MIT
+### 3. Run the Server
+
+```bash
+npm start
+```
+
+For development with auto-reload:
+
+```bash
+npm run dev
+```
+
+The server will start on `http://localhost:3000`
+
+## How It Works
+
+### Architecture Changes
+
+- **Before:** Socket.IO backend + custom game server
+- **After:** Photon Web SDK for all networking
+
+### Key Features
+
+- **Real-time Multiplayer:** Up to 4 players per room using Photon Cloud
+- **Rooms:** Join existing rooms or create new ones
+- **Persistent Game State:** Synchronized across all players
+- **WebSocket:** Secure WSS connection to Photon Cloud
+- **No Backend Game Logic:** Clients handle game updates (for this simple game)
+
+## Game Controls
+
+- **Arrow Keys or WASD:** Move your snake
+- **On-screen Buttons:** Alternative controls for touch devices
+
+## File Structure
+
+```
+.
+├── server.js                 # Express server (serves static files)
+├── package.json             # Dependencies
+└── public/
+    ├── index.html           # Main HTML
+    ├── game.js              # Game logic with Photon integration
+    ├── photon-config.js     # Photon configuration
+    ├── style.css            # Styling
+```
+
+## Photon Web SDK
+
+The Photon Web SDK is loaded from CDN:
+```html
+<script src="https://cdn.jsdelivr.net/npm/photon-javascript-sdk@1.2.5/lib/photon-javascript_sdk.min.js"></script>
+```
+
+## Deployment
+
+Deploy this app to any Node.js hosting platform:
+- Heroku
+- Railway
+- Render
+- Vercel (with serverless backend)
+- AWS
+- etc.
+
+All networking goes through Photon Cloud, so no game server logic needs to be deployed.
+
+## Troubleshooting
+
+### Connection Issues
+
+1. Check that your Photon App ID is valid
+2. Ensure WebSocket is not blocked by firewall/proxy
+3. Check browser console for error messages
+
+### Game Sync Issues
+
+- The game uses client-side game logic, so all players must run the same game rules
+- For production, consider moving game validation to Photon plugins or a custom backend
+
+## Future Improvements
+
+- [ ] Move game logic to server-side validation (Photon plugins)
+- [ ] Add authentication
+- [ ] Add persistence/leaderboards
+- [ ] Add more game modes
+- [ ] Optimize networking for lower latency

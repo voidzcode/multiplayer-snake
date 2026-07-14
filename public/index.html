@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multiplayer Snake</title>
+    <title>Multiplayer Snake - Photon</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🐍 Multiplayer Snake</h1>
-            <div class="connection-status" id="status">Connecting...</div>
+            <div class="connection-status" id="status">Initializing...</div>
         </div>
 
         <div class="game-wrapper">
@@ -20,8 +20,8 @@
                 <div class="join-section" id="joinSection">
                     <h2>Join Game</h2>
                     <input type="text" id="playerName" placeholder="Your name" maxlength="15">
-                    <input type="text" id="gameId" placeholder="Game ID" value="default">
-                    <button onclick="joinGame()">Join</button>
+                    <input type="text" id="roomName" placeholder="Room name" value="default">
+                    <button onclick="joinRoom()">Join</button>
                 </div>
 
                 <div class="game-info" id="gameInfo" style="display:none;">
@@ -48,7 +48,9 @@
         </div>
     </div>
 
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!-- Photon Web SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/photon-javascript-sdk@1.2.5/lib/photon-javascript_sdk.min.js"></script>
+    <script src="photon-config.js"></script>
     <script src="game.js"></script>
 </body>
 </html>
