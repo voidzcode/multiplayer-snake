@@ -19,7 +19,7 @@ npm install
 The game is configured to use your Photon App ID:
 
 ```
-App ID: 2902f049-a0b0-410b-9e8b-c488d223e870
+App ID: *****************
 ```
 
 This is already set in `public/photon-config.js` and `public/game.js`.
